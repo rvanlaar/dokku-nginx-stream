@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+[[ $DOKKU_TRACE ]] && set -x
+
+plugin-install () {
+    cat >> /etc/nginx/nginx.conf << EOF
+stream {
+    include /home/dokku/*/nginx-stream.conf;
+}
+EOF
+}
+
+plugin-install "$@"
