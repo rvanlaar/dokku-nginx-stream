@@ -1,0 +1,16 @@
+{{ range $port_map := .PROXY_PORT_MAP | split " " }}
+{{ $port_map_list := $port_map | split ":" }}
+{{ $scheme := index $port_map_list 0 }}
+{{ $listen_port := index $port_map_list 1 }}
+{{ $upstream_port := index $port_map_list 2 }}
+
+upstream {{$.APP}}-{{ $upstream_port }} {
+    server {{ $.DOKKU_APP_LISTEN_IP }}:{{ $upstream_port }};
+}
+
+server {
+    listen  {{ $listen_port }};
+    proxy_pass {{$.APP}}-{{ $upstream_port }};
+}
+
+{{ end }}

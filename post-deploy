@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -eo pipefail
+[[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_AVAILABLE_PATH/nginx-stream/functions"
+
+trigger-nginx-stream-post-deploy() {
+  declare desc="nginx-stream post-deploy plugin trigger"
+  declare APP="$1"
+
+  nginx_stream_build_config "$APP"
+}
+
+trigger-nginx-stream-post-deploy "$@"
