@@ -39,7 +39,8 @@ nginx_stream_build_config() {
 
   local SIGIL_PARAMS=(-f "$STREAM_TEMPLATE" APP="$APP"
     DOKKU_APP_LISTEN_IP="$DOKKU_APP_LISTEN_IP"
-    PROXY_PORT_MAP="$PROXY_PORT_MAP")
+    PROXY_PORT_MAP="$PROXY_PORT_MAP"
+    PROXY_UPSTREAM_PORTS="$PROXY_UPSTREAM_PORTS")
 
   local DOKKU_SCALE_FILE="$DOKKU_ROOT/$APP/DOKKU_SCALE"
   while read -r line || [[ -n "$line" ]]; do
@@ -54,6 +55,6 @@ nginx_stream_build_config() {
 
   echo "-----> Configuring NGINX Stream plugin"
   sigil "${SIGIL_PARAMS[@]}" | cat -s >"$STREAM_CONF"
-  mv "$STREAM_CONF" "$DOKKU_ROOT/$APP/stream.conf"
+  mv "$STREAM_CONF" "$DOKKU_ROOT/$APP/nginx-stream.conf"
   validate_nginx && restart_nginx >/dev/null
 }

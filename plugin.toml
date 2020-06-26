@@ -1,4 +1,4 @@
 [plugin]
 description = "Stream tcp ports from host to container"
-version = "0.0.1"
+version = "0.1.0"
 [plugin.config]
