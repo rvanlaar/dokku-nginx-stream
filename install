@@ -4,10 +4,12 @@ set -eo pipefail
 [[ $DOKKU_TRACE ]] && set -x
 
 plugin-install () {
-    NGINX_CONF="/etc/nginx/nginx.conf"
+    local NGINX_STREAM_SUDOERS_FILE="/etc/sudoers.d/dokku-nginx-stream"
+    local NGINX_CONF="/etc/nginx/nginx.conf"
+    mkdir -p "/etc/nginx/app-stream"
     cat >> $NGINX_CONF << EOF
 stream {
-    include /home/dokku/*/nginx-stream.conf;
+    include /etc/nginx/app-stream/*.conf;
 }
 EOF
 }

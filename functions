@@ -55,6 +55,6 @@ nginx_stream_build_config() {
 
   echo "-----> Configuring NGINX Stream plugin"
   sigil "${SIGIL_PARAMS[@]}" | cat -s >"$STREAM_CONF"
-  mv "$STREAM_CONF" "$DOKKU_ROOT/$APP/nginx-stream.conf"
+  mv "$STREAM_CONF" "/etc/nginx/app-stream/$APP.conf"
   validate_nginx && restart_nginx >/dev/null
 }
