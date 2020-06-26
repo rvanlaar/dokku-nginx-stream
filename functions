@@ -1,38 +1,59 @@
 #!/usr/bin/env bash
 set -eo pipefail
 [[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_AVAILABLE_PATH/config/functions"
+source "$PLUGIN_AVAILABLE_PATH/nginx-vhosts/functions"
 
 nginx_stream_build_config() {
   local APP="$1"
   local STREAM_TEMPLATE_NAME="stream.conf.sigil"
   local STREAM_TEMPLATE="$PLUGIN_AVAILABLE_PATH/nginx-stream/templates/$STREAM_TEMPLATE_NAME"
   local SCHEME=tcp
-  if [[ "$(plugn trigger proxy-is-enabled "$APP")" == "true" ]]; then
-    local DOKKU_PROXY_PORT_MAP=$(config_get "$APP" DOKKU_PROXY_PORT_MAP)
-
-
-    local PORT_MAP PROXY_PORT_MAP
-    for PORT_MAP in $DOKKU_PROXY_PORT_MAP; do
-      local PROXY_SCHEME="$(awk -F ':' '{ print $1 }' <<<"$PORT_MAP")"
-      if [[ "$PROXY_SCHEME" == "tcp" ]]; then
-        local PROXY_PORT_MAP+="$PORT_MAP"
-      fi
-    done
-    local PROXY_PORT_MAP="$(echo "$PROXY_PORT_MAP" | xargs)"
-
-    local STREAM_BUILD_CONFIG_TMP_WORK_DIR=$(mktemp -d "/tmp/dokku-${DOKKU_PID}-${FUNCNAME[0]}.XXXXXX")
-    local STREAM_CONF=$(mktemp --tmpdir="${STREAM_BUILD_CONFIG_TMP_WORK_DIR}" "stream.conf.XXXXXX")
-
-    local SIGIL_PARAMS=(-f "$STREAM_TEMPLATE" APP="$APP" 
-      DOKKU_APP_LISTEN_IP="$DOKKU_APP_LISTEN_IP"
-      PROXY_PORT_MAP="$PROXY_PORT_MAP")
-    echo "-----> Configuring NGINX Stream plugin"
-    sigil "${SIGIL_PARAMS[@]}" | cat -s >"$STREAM_CONF"
-    mv "$STREAM_CONF" "$DOKKU_ROOT/$APP/stream.conf"
-
-  else
+  if [[ "$(plugn trigger proxy-is-enabled "$APP")" != "true" ]]; then
     dokku_log_fail "Enable proxy for this to work"
+    exit 0
   fi
-}
+  local DOKKU_PROXY_PORT_MAP=$(config_get "$APP" DOKKU_PROXY_PORT_MAP)
 
-Upstream ports....
+
+  local PORT_MAP PROXY_PORT_MAP
+  for PORT_MAP in $DOKKU_PROXY_PORT_MAP; do
+    local PROXY_SCHEME="$(awk -F ':' '{ print $1 }' <<<"$PORT_MAP")"
+    if [[ "$PROXY_SCHEME" == "tcp" ]]; then
+      local PROXY_PORT_MAP+="$PORT_MAP"
+    fi
+  done
+  local PROXY_PORT_MAP="$(echo "$PROXY_PORT_MAP" | xargs)"
+
+  local PROXY_UPSTREAM_PORTS
+  for PORT_MAP in $PROXY_PORT_MAP; do
+    local PROXY_UPSTREAM_PORT="$(awk -F ':' '{ print $3 }' <<<"$PORT_MAP")"
+    if [[ "$(is_val_in_list "$PROXY_UPSTREAM_PORT" "$PROXY_UPSTREAM_PORTS" " ")" == "false" ]]; then
+      local PROXY_UPSTREAM_PORTS+="$PROXY_UPSTREAM_PORT "
+    fi
+  done
+  local PROXY_UPSTREAM_PORTS="$(echo "$PROXY_UPSTREAM_PORTS" | xargs)"
+
+  local STREAM_BUILD_CONFIG_TMP_WORK_DIR=$(mktemp -d "/tmp/dokku-${DOKKU_PID}-${FUNCNAME[0]}.XXXXXX")
+  local STREAM_CONF=$(mktemp --tmpdir="${STREAM_BUILD_CONFIG_TMP_WORK_DIR}" "stream.conf.XXXXXX")
+
+  local SIGIL_PARAMS=(-f "$STREAM_TEMPLATE" APP="$APP"
+    DOKKU_APP_LISTEN_IP="$DOKKU_APP_LISTEN_IP"
+    PROXY_PORT_MAP="$PROXY_PORT_MAP")
+
+  local DOKKU_SCALE_FILE="$DOKKU_ROOT/$APP/DOKKU_SCALE"
+  while read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^#.* ]] && continue
+    line="$(strip_inline_comments "$line")"
+    PROC_TYPE=${line%%=*}
+    LISTENERS="$(plugn trigger network-get-listeners "$APP" "$PROC_TYPE" | xargs)"
+    UPP_PROC_TYPE="${PROC_TYPE^^}"
+    UPP_PROC_TYPE="${UPP_PROC_TYPE//-/_}"
+    SIGIL_PARAMS+=( "DOKKU_APP_${UPP_PROC_TYPE}_LISTENERS=$LISTENERS" )
+  done <"$DOKKU_SCALE_FILE"
+
+  echo "-----> Configuring NGINX Stream plugin"
+  sigil "${SIGIL_PARAMS[@]}" | cat -s >"$STREAM_CONF"
+  mv "$STREAM_CONF" "$DOKKU_ROOT/$APP/stream.conf"
+  validate_nginx && restart_nginx >/dev/null
+}

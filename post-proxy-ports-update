@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -eo pipefail
 [[ $DOKKU_TRACE ]] && set -x
-source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
 source "$PLUGIN_AVAILABLE_PATH/nginx-stream/functions"
 
 trigger-nginx-stream-post-deploy() {
   declare desc="nginx-stream post-deploy plugin trigger"
-  declare trigger="nginx_stream_post_deploy"
+  declare trigger="nginx_stream_core_post_deploy"
   declare APP="$1"
+
   if [[ "$(plugn trigger proxy-type "$APP")" == "nginx" ]]; then
-      nginx_stream_build_config "$APP"
+    nginx_stream_build_config "$APP"
   fi
 }
 
