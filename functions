@@ -59,8 +59,7 @@ nginx_stream_build_config() {
     SIGIL_PARAMS+=( "DOKKU_APP_${UPP_PROC_TYPE}_LISTENERS=$LISTENERS" )
   done <"$DOKKU_SCALE_FILE"
 
-  echo "-----> Configuring NGINX Stream plugin"
   sigil "${SIGIL_PARAMS[@]}" | cat -s >"$STREAM_CONF"
-  mv "$STREAM_CONF" "/etc/nginx/app-stream/$APP.conf"
+  sudo /bin/mv "$STREAM_CONF" "/etc/nginx/app-stream/$APP.conf"
   validate_nginx && restart_nginx >/dev/null
 }

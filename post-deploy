@@ -9,7 +9,7 @@ trigger-nginx-stream-post-deploy() {
   declare trigger="nginx_stream_post_deploy"
   declare APP="$1"
   if [[ "$(plugn trigger proxy-type "$APP")" == "nginx" ]]; then
-      nginx_stream_build_config "$APP"
+    nginx_stream_build_config "$APP"
   fi
 }
 
