@@ -6,7 +6,7 @@ set -eo pipefail
 plugin-install () {
     local NGINX_STREAM_SUDOERS_FILE="/etc/sudoers.d/dokku-nginx-stream"
     echo "%dokku ALL=(ALL) NOPASSWD:/bin/mv /tmp/dokku-*-nginx_stream_build_config*/stream.conf* /etc/nginx/app-stream/*" \
-        > "NGINX_STREAM_SUDOERS_FILE"
+        > "$NGINX_STREAM_SUDOERS_FILE"
     local NGINX_CONF="/etc/nginx/nginx.conf"
     mkdir -p "/etc/nginx/app-stream"
     cat >> $NGINX_CONF << EOF
