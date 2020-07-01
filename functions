@@ -13,8 +13,10 @@ nginx_stream_build_config() {
     dokku_log_fail "Enable proxy for this to work"
     exit 0
   fi
-  local DOKKU_PROXY_PORT_MAP=$(config_get "$APP" DOKKU_PROXY_PORT_MAP)
 
+  echo "-----> Configuring NGINX Stream plugin"
+
+  local DOKKU_PROXY_PORT_MAP=$(config_get "$APP" DOKKU_PROXY_PORT_MAP)
 
   local PORT_MAP PROXY_PORT_MAP
   for PORT_MAP in $DOKKU_PROXY_PORT_MAP; do
@@ -24,6 +26,10 @@ nginx_stream_build_config() {
     fi
   done
   local PROXY_PORT_MAP="$(echo "$PROXY_PORT_MAP" | xargs)"
+  if [[ -z "$PROXY_PORT_MAP" ]]; then
+      echo "No TCP ports specified."
+      return 0
+  fi
 
   local PROXY_UPSTREAM_PORTS
   for PORT_MAP in $PROXY_PORT_MAP; do
