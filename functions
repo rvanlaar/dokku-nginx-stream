@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 [[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
 source "$PLUGIN_AVAILABLE_PATH/config/functions"
 source "$PLUGIN_AVAILABLE_PATH/nginx-vhosts/functions"
 
@@ -14,45 +15,63 @@ nginx_stream_build_config() {
     exit 0
   fi
 
-  echo "-----> Configuring NGINX Stream plugin"
-
   local DOKKU_PROXY_PORT_MAP=$(config_get "$APP" DOKKU_PROXY_PORT_MAP)
 
-  local PORT_MAP PROXY_PORT_MAP
+  local PORT_MAP TCP_PROXY_PORT_MAP UDP_PROXY_PORT_MAP
   for PORT_MAP in $DOKKU_PROXY_PORT_MAP; do
     local PROXY_SCHEME="$(awk -F ':' '{ print $1 }' <<<"$PORT_MAP")"
     if [[ "$PROXY_SCHEME" == "tcp" ]]; then
-      local PROXY_PORT_MAP+="$PORT_MAP"
+      local TCP_PROXY_PORT_MAP+="$PORT_MAP"
+    fi
+    if [[ "$PROXY_SCHEME" == "udp" ]]; then
+      local UDP_PROXY_PORT_MAP+="$PORT_MAP"
     fi
   done
-  local PROXY_PORT_MAP="$(echo "$PROXY_PORT_MAP" | xargs)"
-  if [[ -z "$PROXY_PORT_MAP" ]]; then
-      echo "No TCP ports specified."
+  local TCP_PROXY_PORT_MAP="$(echo "$TCP_PROXY_PORT_MAP" | xargs)"
+  local UDP_PROXY_PORT_MAP="$(echo "$UDP_PROXY_PORT_MAP" | xargs)"
+  if [[ -z "$TCP_PROXY_PORT_MAP" ]] && [[ -z "$UDP_PROXY_PORT_MAP" ]]; then
+      echo "No stream (tcp/udp) ports specified."
       return 0
   fi
 
-  local PROXY_UPSTREAM_PORTS
-  for PORT_MAP in $PROXY_PORT_MAP; do
+  dokku_log_info1 "Configuring NGINX Stream plugin"
+
+  local TCP_PROXY_UPSTREAM_PORTS
+  for PORT_MAP in $TCP_PROXY_PORT_MAP; do
     local PROXY_UPSTREAM_PORT="$(awk -F ':' '{ print $3 }' <<<"$PORT_MAP")"
-    if [[ "$(is_val_in_list "$PROXY_UPSTREAM_PORT" "$PROXY_UPSTREAM_PORTS" " ")" == "false" ]]; then
-      local PROXY_UPSTREAM_PORTS+="$PROXY_UPSTREAM_PORT "
+    if [[ "$(is_val_in_list "$PROXY_UPSTREAM_PORT" "$TCP_PROXY_UPSTREAM_PORTS" " ")" == "false" ]]; then
+      local TCP_PROXY_UPSTREAM_PORTS+="$PROXY_UPSTREAM_PORT "
     fi
   done
-  local PROXY_UPSTREAM_PORTS="$(echo "$PROXY_UPSTREAM_PORTS" | xargs)"
+
+  local UDP_PROXY_UPSTREAM_PORTS
+  for PORT_MAP in $UDP_PROXY_PORT_MAP; do
+    local PROXY_UPSTREAM_PORT="$(awk -F ':' '{ print $3 }' <<<"$PORT_MAP")"
+    if [[ "$(is_val_in_list "$PROXY_UPSTREAM_PORT" "$UDP_PROXY_UPSTREAM_PORTS" " ")" == "false" ]]; then
+      local UDP_PROXY_UPSTREAM_PORTS+="$PROXY_UPSTREAM_PORT "
+    fi
+  done
+
+  TCP_PROXY_UPSTREAM_PORTS="$(echo "$TCP_PROXY_UPSTREAM_PORTS" | xargs)"
+  UDP_PROXY_UPSTREAM_PORTS="$(echo "$UDP_PROXY_UPSTREAM_PORTS" | xargs)"
 
   local STREAM_BUILD_CONFIG_TMP_WORK_DIR=$(mktemp -d "/tmp/dokku-${DOKKU_PID}-${FUNCNAME[0]}.XXXXXX")
   local STREAM_CONF=$(mktemp --tmpdir="${STREAM_BUILD_CONFIG_TMP_WORK_DIR}" "stream.conf.XXXXXX")
 
   local SIGIL_PARAMS=(-f "$STREAM_TEMPLATE" APP="$APP"
     DOKKU_APP_LISTEN_IP="$DOKKU_APP_LISTEN_IP"
-    PROXY_PORT_MAP="$PROXY_PORT_MAP"
-    PROXY_UPSTREAM_PORTS="$PROXY_UPSTREAM_PORTS")
+    TCP_PROXY_PORT_MAP="$TCP_PROXY_PORT_MAP"
+    TCP_PROXY_UPSTREAM_PORTS="$TCP_PROXY_UPSTREAM_PORTS"
+    UDP_PROXY_PORT_MAP="$UDP_PROXY_PORT_MAP"
+    UDP_PROXY_UPSTREAM_PORTS="$UDP_PROXY_UPSTREAM_PORTS")
 
   local DOKKU_SCALE_FILE="$DOKKU_ROOT/$APP/DOKKU_SCALE"
   while read -r line || [[ -n "$line" ]]; do
     [[ "$line" =~ ^#.* ]] && continue
     line="$(strip_inline_comments "$line")"
     PROC_TYPE=${line%%=*}
+    [[ "$PROC_TYPE" == "web" ]] || continue
+
     LISTENERS="$(plugn trigger network-get-listeners "$APP" "$PROC_TYPE" | xargs)"
     UPP_PROC_TYPE="${PROC_TYPE^^}"
     UPP_PROC_TYPE="${UPP_PROC_TYPE//-/_}"

@@ -2,9 +2,9 @@
 
 **Note:** Alpha software. Pull Requests are welcome
 
-**Note:** Only one tcp port per app is supported
+**Note:** Only one tcp/udp port per app is supported
 
-Dokku NGINX Stream gives the ability to open up tcp ports
+Dokku NGINX Stream gives the ability to open up tcp/udp ports
 to the outside world. This can be usefull when your application
 speaks more than http.
 
@@ -18,8 +18,10 @@ $ sudo dokku plugin:install https://github.com/rvanlaar/dokku-nginx-stream.git
 ```
 ## Usage
 Nginx Stream leverages the proxy plugin for enabling tcp ports:
+
 ```
 dokku proxy:ports-add myapp tcp:EXTERNAL_PORT:INTERNAL_PORT
+dokku proxy:ports-add myapp udp:EXTERNAL_PORT:INTERNAL_PORT
 dokku ps:rebuild
 ```
 
