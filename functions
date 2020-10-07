@@ -21,10 +21,10 @@ nginx_stream_build_config() {
   for PORT_MAP in $DOKKU_PROXY_PORT_MAP; do
     local PROXY_SCHEME="$(awk -F ':' '{ print $1 }' <<<"$PORT_MAP")"
     if [[ "$PROXY_SCHEME" == "tcp" ]]; then
-      local TCP_PROXY_PORT_MAP+="$PORT_MAP"
+      local TCP_PROXY_PORT_MAP+="$PORT_MAP "
     fi
     if [[ "$PROXY_SCHEME" == "udp" ]]; then
-      local UDP_PROXY_PORT_MAP+="$PORT_MAP"
+      local UDP_PROXY_PORT_MAP+="$PORT_MAP "
     fi
   done
   local TCP_PROXY_PORT_MAP="$(echo "$TCP_PROXY_PORT_MAP" | xargs)"
