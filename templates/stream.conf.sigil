@@ -29,6 +29,7 @@ server {
 
 
 {{ if $.DOKKU_APP_WEB_LISTENERS }}
+{{ if $.TCP_PROXY_UPSTREAM_PORTS }}
 {{ range $upstream_port := $.TCP_PROXY_UPSTREAM_PORTS | split " " }}
 upstream {{ $.APP }}-tcp-{{ $upstream_port }} {
 {{ range $listeners := $.DOKKU_APP_WEB_LISTENERS | split " " }}
@@ -36,7 +37,9 @@ upstream {{ $.APP }}-tcp-{{ $upstream_port }} {
 {{ $listener_ip := index $listener_list 0 }}
   server {{ $listener_ip }}:{{ $upstream_port }};{{ end }}
 }
-{{ end }}
+{{ end }}{{ end }}
+
+{{ if $.UDP_PROXY_UPSTREAM_PORTS }}
 {{ range $upstream_port := $.UDP_PROXY_UPSTREAM_PORTS | split " " }}
 upstream {{ $.APP }}-udp-{{ $upstream_port }} {
 {{ range $listeners := $.DOKKU_APP_WEB_LISTENERS | split " " }}
@@ -45,3 +48,5 @@ upstream {{ $.APP }}-udp-{{ $upstream_port }} {
   server {{ $listener_ip }}:{{ $upstream_port }};{{ end }}
 }
 {{ end }}{{ end }}
+
+{{ end }}
