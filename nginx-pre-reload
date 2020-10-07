@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -eo pipefail
+[[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+source "$PLUGIN_AVAILABLE_PATH/nginx-stream/functions"
+
+trigger-nginx-stream-nginx-pre-reload() {
+  declare desc="nginx-stream nginx-pre-reload plugin trigger"
+  declare trigger="nginx-pre-reload"
+  declare APP="$1"
+
+  nginx_stream_build_config "$APP"
+}
+
+trigger-nginx-stream-nginx-pre-reload "$@"
