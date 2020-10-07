@@ -1,3 +1,4 @@
+{{ if .TCP_PROXY_PORT_MAP }}
 {{ range $port_map := .TCP_PROXY_PORT_MAP | split " " }}
 {{ $port_map_list := $port_map | split ":" }}
 {{ $scheme := index $port_map_list 0 }}
@@ -10,6 +11,8 @@ server {
 }
 
 {{ end }}
+{{ end }}
+{{ if .UDP_PROXY_PORT_MAP }}
 {{ range $port_map := .UDP_PROXY_PORT_MAP | split " " }}
 {{ $port_map_list := $port_map | split ":" }}
 {{ $scheme := index $port_map_list 0 }}
@@ -21,6 +24,7 @@ server {
     proxy_pass {{$.APP}}-udp-{{ $upstream_port }};
 }
 
+{{ end }}
 {{ end }}
 
 
