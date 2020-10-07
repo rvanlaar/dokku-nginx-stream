@@ -33,7 +33,7 @@ upstream {{ $.APP }}-tcp-{{ $upstream_port }} {
   server {{ $listener_ip }}:{{ $upstream_port }};{{ end }}
 }
 {{ end }}
-{{ range $upstream_port := $.TCP_PROXY_UPSTREAM_PORTS | split " " }}
+{{ range $upstream_port := $.UDP_PROXY_UPSTREAM_PORTS | split " " }}
 upstream {{ $.APP }}-udp-{{ $upstream_port }} {
 {{ range $listeners := $.DOKKU_APP_WEB_LISTENERS | split " " }}
 {{ $listener_list := $listeners | split ":" }}
