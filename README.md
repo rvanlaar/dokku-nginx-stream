@@ -14,7 +14,7 @@ speaks more than http.
 
 ```sh
 # dokku 0.5+
-$ sudo dokku plugin:install https://github.com/rvanlaar/dokku-nginx-stream.git
+$ sudo dokku plugin:install https://github.com/josegonzalez/dokku-nginx-stream.git
 ```
 ## Usage
 Nginx Stream leverages the proxy plugin for enabling tcp ports:
