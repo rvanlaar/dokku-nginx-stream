@@ -1,5 +1,7 @@
 # Dokku NGINX Stream plugin (Alpha)
 
+**Note:** A maintained version can be found here: https://github.com/josegonzalez/dokku-nginx-stream
+
 **Note:** Alpha software. Pull Requests are welcome
 
 **Note:** Only one tcp port per app is supported
